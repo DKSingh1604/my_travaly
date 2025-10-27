@@ -4,6 +4,7 @@ import 'package:my_travaly/firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/hotel_provider.dart';
+import 'services/api_service.dart';
 import 'screens/login_screen.dart';
 import 'screens/home_screen.dart';
 
@@ -16,6 +17,16 @@ void main() async {
     );
   } catch (e) {
     print('Firebase initialization error: $e');
+  }
+
+  // Register device and get visitor token
+  try {
+    final apiService = ApiService();
+    await apiService.registerDevice();
+    print('✅ Device registration completed');
+  } catch (e) {
+    print('⚠️ Device registration failed: $e');
+    // Continue anyway - the app will try to register again when making API calls
   }
 
   runApp(const MyApp());

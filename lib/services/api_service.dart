@@ -1,10 +1,174 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import '../models/hotel.dart';
 
 class ApiService {
-  static const String baseUrl = 'https://api.mytravaly.com/public/v1';
+  static const String baseUrl = 'https://api.mytravaly.com/public/v1/';
   static const String authToken = '71523fdd8d26f585315b4233e39d9263';
+  static const String _visitorTokenKey = 'visitor_token';
+
+  String? _visitorToken;
+
+  // Get stored visitor token
+  Future<String?> getVisitorToken() async {
+    if (_visitorToken != null) return _visitorToken;
+
+    final prefs = await SharedPreferences.getInstance();
+    _visitorToken = prefs.getString(_visitorTokenKey);
+    return _visitorToken;
+  }
+
+  // Save visitor token
+  Future<void> _saveVisitorToken(String token) async {
+    _visitorToken = token;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_visitorTokenKey, token);
+  }
+
+  // Register device and get visitor token
+  Future<String> registerDevice() async {
+    try {
+      // Check if we already have a visitor token
+      final existingToken = await getVisitorToken();
+      if (existingToken != null && existingToken.isNotEmpty) {
+        print('✅ Using existing visitor token: $existingToken');
+        return existingToken;
+      }
+
+      // Get device information
+      final deviceInfo = DeviceInfoPlugin();
+      Map<String, dynamic> deviceData = {};
+
+      if (Platform.isAndroid) {
+        final androidInfo = await deviceInfo.androidInfo;
+
+        // Generate a valid-looking serial number for emulators/devices without real serial
+        final serial = androidInfo.serialNumber;
+        String deviceSerial;
+
+        if (serial.isEmpty || serial.toLowerCase() == 'unknown') {
+          // Generate a realistic serial number format (similar to real Android devices)
+          // Format: Random alphanumeric string (8-16 characters)
+          final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+          deviceSerial =
+              '${androidInfo.brand.toUpperCase()}${timestamp.substring(timestamp.length - 10)}';
+        } else {
+          deviceSerial = serial;
+        }
+
+        print('🔢 Using device serial: $deviceSerial');
+
+        deviceData = {
+          "deviceModel": androidInfo.model,
+          "deviceFingerprint": androidInfo.fingerprint,
+          "deviceBrand": androidInfo.brand,
+          "deviceId": androidInfo.id,
+          "deviceName": androidInfo.device,
+          "deviceManufacturer": androidInfo.manufacturer,
+          "deviceProduct": androidInfo.product,
+          "deviceSerial": deviceSerial,
+          "platformRelease": androidInfo.version.release,
+          "platformSdk": androidInfo.version.sdkInt.toString(),
+        };
+      } else if (Platform.isIOS) {
+        final iosInfo = await deviceInfo.iosInfo;
+        deviceData = {
+          "deviceModel": iosInfo.model,
+          "deviceFingerprint": iosInfo.identifierForVendor ?? iosInfo.name,
+          "deviceBrand": "Apple",
+          "deviceId": iosInfo.identifierForVendor ?? "unknown",
+          "deviceName": iosInfo.name,
+          "deviceManufacturer": "Apple",
+          "deviceProduct": iosInfo.utsname.machine,
+          "deviceSerial": iosInfo.identifierForVendor ?? iosInfo.name,
+          "platformRelease": iosInfo.systemVersion,
+          "platformSdk": iosInfo.systemVersion,
+        };
+      } else {
+        // Fallback for web or other platforms
+        deviceData = {
+          "deviceModel": "WebBrowser",
+          "deviceFingerprint": "web-device",
+          "deviceBrand": "Browser",
+          "deviceId": "web-001",
+          "deviceName": "WebDevice",
+          "deviceManufacturer": "Browser",
+          "deviceProduct": "Web",
+          "deviceSerial": "web-serial-${DateTime.now().millisecondsSinceEpoch}",
+          "platformRelease": "Web",
+          "platformSdk": "0",
+        };
+      }
+
+      // Register new device - POST to base URL with action in body
+      final uri = Uri.parse(baseUrl);
+
+      print('🔐 Registering device...');
+      print('📋 Device Serial being sent: ${deviceData["deviceSerial"]}');
+
+      final requestBody = {
+        "action": "deviceRegister",
+        "deviceRegister": deviceData,
+      };
+
+      print('📤 Request Body: ${json.encode(requestBody)}');
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'authToken': authToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode(requestBody),
+      );
+
+      print('📡 Registration Status Code: ${response.statusCode}');
+      print('📄 Registration Response: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == true && data['data'] != null) {
+          final visitorToken = data['data']['visitorToken'] as String?;
+
+          if (visitorToken != null && visitorToken.isNotEmpty) {
+            await _saveVisitorToken(visitorToken);
+            print(
+              '✅ Device registered successfully. Visitor token: $visitorToken',
+            );
+            return visitorToken;
+          }
+        }
+
+        throw Exception('Invalid response format: No visitor token received');
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(
+          errorData['message'] ??
+              'Failed to register device: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('💥 Registration Error: $e');
+      throw Exception('Error registering device: $e');
+    }
+  }
+
+  // Get popular hotels for home page
+  Future<List<Hotel>> getSampleHotels() async {
+    try {
+      // Fetch popular hotels using the API
+      final result = await searchHotels(query: 'hotel', page: 1, perPage: 10);
+      return result['hotels'] as List<Hotel>;
+    } catch (e) {
+      print('💥 Error loading hotels: $e');
+      return [];
+    }
+  }
 
   Future<Map<String, dynamic>> searchHotels({
     required String query,
@@ -12,116 +176,90 @@ class ApiService {
     int perPage = 10,
   }) async {
     try {
-      final uri = Uri.parse('$baseUrl/hotels/search').replace(
-        queryParameters: {
-          'query': query,
-          'page': page.toString(),
-          'per_page': perPage.toString(),
-        },
+      // Ensure device is registered and we have a visitor token
+      final visitorToken = await getVisitorToken();
+      if (visitorToken == null || visitorToken.isEmpty) {
+        print('⚠️ No visitor token found, registering device...');
+        await registerDevice();
+      }
+
+      // POST to base URL with action in body
+      final uri = Uri.parse(baseUrl);
+
+      print('🔍 API Request: $uri');
+      print('🔑 Auth Token: $authToken');
+      print('🎫 Visitor Token: ${_visitorToken ?? "None"}');
+
+      final headers = {
+        'authToken': authToken,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      // Add visitor token if available
+      if (_visitorToken != null && _visitorToken!.isNotEmpty) {
+        headers['visitorToken'] = _visitorToken!;
+      }
+
+      // Request body with action
+      final requestBody = {
+        "action": "hotelList",
+        // Add any search parameters here if needed
+      };
+
+      print('📤 Request Body: ${json.encode(requestBody)}');
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: json.encode(requestBody),
       );
 
-      final response = await http.get(
-        uri,
-        headers: {
-          'auth-token': authToken,
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
+      print('📡 Status Code: ${response.statusCode}');
+      print(
+        '📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}...',
       );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
         List<Hotel> hotels = [];
-        if (data['data'] != null) {
-          if (data['data'] is List) {
-            hotels = (data['data'] as List)
-                .map((json) => Hotel.fromJson(json))
+        int total = 0;
+        int totalPages = 1;
+
+        // Parse API response based on the structure you provided
+        if (data['status'] == true) {
+          var hotelData = data['data'];
+
+          if (hotelData is List) {
+            hotels = hotelData
+                .map((json) => Hotel.fromJson(json as Map<String, dynamic>))
                 .toList();
           }
-        } else if (data['hotels'] != null) {
-          hotels = (data['hotels'] as List)
-              .map((json) => Hotel.fromJson(json))
-              .toList();
+
+          total = hotels.length;
+          totalPages = (total / perPage).ceil();
+
+          print('✅ Parsed ${hotels.length} hotels successfully');
         }
 
         return {
           'hotels': hotels,
-          'total': data['total'] ?? hotels.length,
-          'page': data['page'] ?? page,
-          'perPage': data['per_page'] ?? perPage,
-          'totalPages': data['total_pages'] ?? 1,
+          'total': total,
+          'page': page,
+          'perPage': perPage,
+          'totalPages': totalPages,
         };
       } else {
-        throw Exception('Failed to load hotels: ${response.statusCode}');
+        final errorData = json.decode(response.body);
+        throw Exception(
+          errorData['message'] ??
+              'Failed to load hotels: ${response.statusCode}',
+        );
       }
     } catch (e) {
+      print('💥 API Error: $e');
       throw Exception('Error searching hotels: $e');
     }
-  }
-
-  Future<List<Hotel>> getSampleHotels() async {
-    return [
-      Hotel(
-        id: '1',
-        name: 'Grand Hotel Mumbai',
-        city: 'Mumbai',
-        state: 'Maharashtra',
-        country: 'India',
-        imageUrl:
-            'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400',
-        description: 'Luxury hotel in the heart of Mumbai',
-        rating: 4.5,
-        price: 5000,
-      ),
-      Hotel(
-        id: '2',
-        name: 'Royal Palace Delhi',
-        city: 'Delhi',
-        state: 'Delhi',
-        country: 'India',
-        imageUrl:
-            'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?w=400',
-        description: 'Experience royalty in the capital',
-        rating: 4.8,
-        price: 7000,
-      ),
-      Hotel(
-        id: '3',
-        name: 'Beach Resort Goa',
-        city: 'Goa',
-        state: 'Goa',
-        country: 'India',
-        imageUrl:
-            'https://images.unsplash.com/photo-1571896349842-33c89424de2d?w=400',
-        description: 'Beachfront paradise',
-        rating: 4.6,
-        price: 4500,
-      ),
-      Hotel(
-        id: '4',
-        name: 'Heritage Inn Jaipur',
-        city: 'Jaipur',
-        state: 'Rajasthan',
-        country: 'India',
-        imageUrl:
-            'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400',
-        description: 'Traditional Rajasthani hospitality',
-        rating: 4.4,
-        price: 3500,
-      ),
-      Hotel(
-        id: '5',
-        name: 'Lake View Udaipur',
-        city: 'Udaipur',
-        state: 'Rajasthan',
-        country: 'India',
-        imageUrl:
-            'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=400',
-        description: 'Scenic views of Lake Pichola',
-        rating: 4.7,
-        price: 6000,
-      ),
-    ];
   }
 }

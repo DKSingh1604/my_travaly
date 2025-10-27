@@ -8,6 +8,10 @@ class Hotel {
   final String? description;
   final double? rating;
   final double? price;
+  final int? stars;
+  final String? propertyType;
+  final String? zipcode;
+  final String? street;
 
   Hotel({
     required this.id,
@@ -19,19 +23,38 @@ class Hotel {
     this.description,
     this.rating,
     this.price,
+    this.stars,
+    this.propertyType,
+    this.zipcode,
+    this.street,
   });
 
   factory Hotel.fromJson(Map<String, dynamic> json) {
+    // Extract address data
+    final address = json['propertyAddress'] ?? {};
+
+    // Extract review data
+    final googleReview = json['googleReview']?['data'];
+    final rating = googleReview?['overallRating']?.toDouble();
+
+    // Extract price data
+    final staticPrice = json['staticPrice'];
+    final price = staticPrice?['amount']?.toDouble();
+
     return Hotel(
-      id: json['id']?.toString() ?? '',
-      name: json['name'] ?? '',
-      city: json['city'] ?? '',
-      state: json['state'] ?? '',
-      country: json['country'] ?? '',
-      imageUrl: json['image_url'] ?? json['imageUrl'],
-      description: json['description'],
-      rating: json['rating']?.toDouble(),
-      price: json['price']?.toDouble(),
+      id: json['propertyCode']?.toString() ?? '',
+      name: json['propertyName'] ?? '',
+      city: address['city'] ?? '',
+      state: address['state'] ?? '',
+      country: address['country'] ?? '',
+      imageUrl: json['propertyImage'],
+      description: address['street'],
+      rating: rating,
+      price: price,
+      stars: json['propertyStar'],
+      propertyType: json['propertyType'],
+      zipcode: address['zipcode'],
+      street: address['street'],
     );
   }
 
@@ -46,6 +69,8 @@ class Hotel {
       'description': description,
       'rating': rating,
       'price': price,
+      'stars': stars,
+      'propertyType': propertyType,
     };
   }
 }

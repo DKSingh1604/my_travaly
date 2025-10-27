@@ -72,13 +72,10 @@ class HotelProvider extends ChangeNotifier {
       _totalPages = result['totalPages'] as int;
     } catch (e) {
       _errorMessage = e.toString();
-      _searchResults = _hotels.where((hotel) {
-        final searchLower = query.toLowerCase();
-        return hotel.name.toLowerCase().contains(searchLower) ||
-            hotel.city.toLowerCase().contains(searchLower) ||
-            hotel.state.toLowerCase().contains(searchLower) ||
-            hotel.country.toLowerCase().contains(searchLower);
-      }).toList();
+      // No fallback - show error to user
+      if (resetPage) {
+        _searchResults = [];
+      }
       _totalPages = 1;
     } finally {
       _isLoading = false;
