@@ -101,4 +101,9 @@ class HotelProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
   }
+
+  void clearSearchError() {
+    _errorMessage = null;
+    notifyListeners();
+  }
 }

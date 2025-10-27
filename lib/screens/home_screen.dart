@@ -1,3 +1,5 @@
+// ignore_for_file: sort_child_properties_last
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
@@ -19,9 +21,10 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Load sample hotels when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<HotelProvider>(context, listen: false).loadSampleHotels();
+      final hotelProvider = Provider.of<HotelProvider>(context, listen: false);
+      hotelProvider.clearSearchError();
+      hotelProvider.loadSampleHotels();
     });
   }
 
@@ -61,7 +64,6 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('MyTravaly'),
         actions: [
-          // User Profile
           if (authProvider.user != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -84,7 +86,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ],
               ),
             ),
-          // Sign Out Button
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _handleSignOut,
@@ -96,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Search Bar
           Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(15),
             color: Colors.blue.shade50,
             child: TextField(
               controller: _searchController,
@@ -130,32 +131,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
           // Hotels List
           Expanded(
-            child: hotelProvider.isLoading
+            child: hotelProvider.isLoading && hotelProvider.hotels.isEmpty
                 ? const Center(child: CircularProgressIndicator())
-                : hotelProvider.errorMessage != null
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          size: 60,
-                          color: Colors.red,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Error: ${hotelProvider.errorMessage}',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: () => hotelProvider.loadSampleHotels(),
-                          child: const Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  )
                 : hotelProvider.hotels.isEmpty
                 ? const Center(
                     child: Text(
