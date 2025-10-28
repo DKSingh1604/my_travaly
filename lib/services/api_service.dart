@@ -28,30 +28,24 @@ class ApiService {
     await prefs.setString(_visitorTokenKey, token);
   }
 
-  // Register device and get visitor token
   Future<String> registerDevice() async {
     try {
-      // Check if we already have a visitor token
       final existingToken = await getVisitorToken();
       if (existingToken != null && existingToken.isNotEmpty) {
         print('✅ Using existing visitor token: $existingToken');
         return existingToken;
       }
 
-      // Get device information
       final deviceInfo = DeviceInfoPlugin();
       Map<String, dynamic> deviceData = {};
 
       if (Platform.isAndroid) {
         final androidInfo = await deviceInfo.androidInfo;
 
-        // Generate a valid-looking serial number for emulators/devices without real serial
         final serial = androidInfo.serialNumber;
         String deviceSerial;
 
         if (serial.isEmpty || serial.toLowerCase() == 'unknown') {
-          // Generate a realistic serial number format (similar to real Android devices)
-          // Format: Random alphanumeric string (8-16 characters)
           final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
           deviceSerial =
               '${androidInfo.brand.toUpperCase()}${timestamp.substring(timestamp.length - 10)}';
@@ -69,7 +63,7 @@ class ApiService {
           "deviceName": androidInfo.device,
           "deviceManufacturer": androidInfo.manufacturer,
           "deviceProduct": androidInfo.product,
-          "deviceSerial": deviceSerial,
+          "deviceSerialNumber": deviceSerial,
           "platformRelease": androidInfo.version.release,
           "platformSdk": androidInfo.version.sdkInt.toString(),
         };
@@ -83,12 +77,11 @@ class ApiService {
           "deviceName": iosInfo.name,
           "deviceManufacturer": "Apple",
           "deviceProduct": iosInfo.utsname.machine,
-          "deviceSerial": iosInfo.identifierForVendor ?? iosInfo.name,
+          "deviceSerialNumber": iosInfo.identifierForVendor ?? iosInfo.name,
           "platformRelease": iosInfo.systemVersion,
           "platformSdk": iosInfo.systemVersion,
         };
       } else {
-        // Fallback for web or other platforms
         deviceData = {
           "deviceModel": "WebBrowser",
           "deviceFingerprint": "web-device",
@@ -97,13 +90,13 @@ class ApiService {
           "deviceName": "WebDevice",
           "deviceManufacturer": "Browser",
           "deviceProduct": "Web",
-          "deviceSerial": "web-serial-${DateTime.now().millisecondsSinceEpoch}",
+          "deviceSerialNumber":
+              "web-serial-${DateTime.now().millisecondsSinceEpoch}",
           "platformRelease": "Web",
           "platformSdk": "0",
         };
       }
 
-      // Register new device - POST to base URL with action in body
       final uri = Uri.parse(baseUrl);
 
       print('🔐 Registering device...');
@@ -204,7 +197,9 @@ class ApiService {
       // Request body with action
       final requestBody = {
         "action": "hotelList",
-        // Add any search parameters here if needed
+        if (query.trim().isNotEmpty) "search": query.trim(),
+        "page": page,
+        "limit": perPage,
       };
 
       print('📤 Request Body: ${json.encode(requestBody)}');
