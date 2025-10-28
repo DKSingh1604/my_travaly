@@ -163,20 +163,150 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> searchHotels({
-    required String query,
-    int page = 1,
-    int perPage = 10,
-  }) async {
+  // API-based autocomplete for location search
+  Future<List<Map<String, String>>> getAutocomplete(String query) async {
     try {
-      // Ensure device is registered and we have a visitor token
+      if (query.trim().isEmpty || query.trim().length < 3) return [];
+
       final visitorToken = await getVisitorToken();
       if (visitorToken == null || visitorToken.isEmpty) {
         print('⚠️ No visitor token found, registering device...');
         await registerDevice();
       }
 
-      // POST to base URL with action in body
+      final uri = Uri.parse(baseUrl);
+
+      final headers = {
+        'authToken': authToken,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      };
+
+      if (_visitorToken != null && _visitorToken!.isNotEmpty) {
+        headers['visitorToken'] = _visitorToken!;
+      }
+
+      final requestBody = {
+        "action": "searchAutoComplete",
+        "searchAutoComplete": {
+          "inputText": query,
+          "searchType": ["byCity", "byState", "byCountry", "byPropertyName"],
+          "limit": 10,
+        },
+      };
+
+      print('🔍 Autocomplete Request: ${json.encode(requestBody)}');
+
+      final response = await http.post(
+        uri,
+        headers: headers,
+        body: json.encode(requestBody),
+      );
+
+      print('📡 Autocomplete Status: ${response.statusCode}');
+      print('📄 Autocomplete Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        List<Map<String, String>> suggestions = [];
+
+        if (data['status'] == true && data['data'] != null) {
+          final autoCompleteData = data['data'];
+          final autoCompleteList = autoCompleteData['autoCompleteList'];
+
+          if (autoCompleteList != null) {
+            // Parse byCity results
+            if (autoCompleteList['byCity'] != null &&
+                autoCompleteList['byCity']['present'] == true) {
+              final cityResults =
+                  autoCompleteList['byCity']['listOfResult'] as List? ?? [];
+              for (var item in cityResults) {
+                suggestions.add({
+                  'name': item['valueToDisplay']?.toString() ?? '',
+                  'type': 'city',
+                  'state': item['address']?['state']?.toString() ?? '',
+                  'country': item['address']?['country']?.toString() ?? 'India',
+                });
+              }
+            }
+
+            // Parse byState results
+            if (autoCompleteList['byState'] != null &&
+                autoCompleteList['byState']['present'] == true) {
+              final stateResults =
+                  autoCompleteList['byState']['listOfResult'] as List? ?? [];
+              for (var item in stateResults) {
+                suggestions.add({
+                  'name': item['valueToDisplay']?.toString() ?? '',
+                  'type': 'state',
+                  'state': item['valueToDisplay']?.toString() ?? '',
+                  'country': item['address']?['country']?.toString() ?? 'India',
+                });
+              }
+            }
+
+            // Parse byCountry results
+            if (autoCompleteList['byCountry'] != null &&
+                autoCompleteList['byCountry']['present'] == true) {
+              final countryResults =
+                  autoCompleteList['byCountry']['listOfResult'] as List? ?? [];
+              for (var item in countryResults) {
+                suggestions.add({
+                  'name': item['valueToDisplay']?.toString() ?? '',
+                  'type': 'country',
+                  'state': '',
+                  'country': item['valueToDisplay']?.toString() ?? '',
+                });
+              }
+            }
+
+            // Parse byPropertyName results
+            if (autoCompleteList['byPropertyName'] != null &&
+                autoCompleteList['byPropertyName']['present'] == true) {
+              final propertyResults =
+                  autoCompleteList['byPropertyName']['listOfResult'] as List? ??
+                  [];
+              for (var item in propertyResults) {
+                suggestions.add({
+                  'name': item['valueToDisplay']?.toString() ?? '',
+                  'type': 'property',
+                  'state': item['address']?['state']?.toString() ?? '',
+                  'country': item['address']?['country']?.toString() ?? 'India',
+                });
+              }
+            }
+          }
+
+          print('✅ Got ${suggestions.length} autocomplete suggestions');
+        }
+
+        return suggestions;
+      } else {
+        print('⚠️ Autocomplete API failed, using empty list');
+        return [];
+      }
+    } catch (e) {
+      print('💥 Autocomplete Error: $e');
+      return [];
+    }
+  }
+
+  Future<Map<String, dynamic>> searchHotels({
+    required String query,
+    String? searchType,
+    String? state,
+    String? city,
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    try {
+      final visitorToken = await getVisitorToken();
+      if (visitorToken == null || visitorToken.isEmpty) {
+        print('⚠️ No visitor token found, registering device...');
+        await registerDevice();
+      }
+
       final uri = Uri.parse(baseUrl);
 
       print('🔍 API Request: $uri');
@@ -189,17 +319,36 @@ class ApiService {
         'Accept': 'application/json',
       };
 
-      // Add visitor token if available
       if (_visitorToken != null && _visitorToken!.isNotEmpty) {
         headers['visitorToken'] = _visitorToken!;
       }
+      Map<String, String> searchInfo;
+      if (searchType != null && state != null && city != null) {
+        searchInfo = {
+          'searchType': searchType,
+          'country': 'India',
+          'state': state,
+          'city': city,
+        };
+      } else {
+        searchInfo = _parseSearchQuery(query);
+      }
 
-      // Request body with action
       final requestBody = {
-        "action": "hotelList",
-        if (query.trim().isNotEmpty) "search": query.trim(),
-        "page": page,
-        "limit": perPage,
+        "action": "popularStay",
+        "popularStay": {
+          "limit": perPage,
+          "entityType": "Any",
+          "filter": {
+            "searchType": searchInfo['searchType'],
+            "searchTypeInfo": {
+              "country": searchInfo['country'],
+              "state": searchInfo['state'],
+              "city": searchInfo['city'],
+            },
+          },
+          "currency": "INR",
+        },
       };
 
       print('📤 Request Body: ${json.encode(requestBody)}');
@@ -222,7 +371,6 @@ class ApiService {
         int total = 0;
         int totalPages = 1;
 
-        // Parse API response based on the structure you provided
         if (data['status'] == true) {
           var hotelData = data['data'];
 
@@ -256,5 +404,140 @@ class ApiService {
       print('💥 API Error: $e');
       throw Exception('Error searching hotels: $e');
     }
+  }
+
+  Map<String, String> _parseSearchQuery(String query) {
+    if (query.trim().isEmpty) {
+      return {
+        'searchType': 'byCity',
+        'country': 'India',
+        'state': 'Jharkhand',
+        'city': 'Jamshedpur',
+      };
+    }
+
+    final queryLower = query.toLowerCase().trim();
+
+    final indianStates = [
+      'andhra pradesh',
+      'arunachal pradesh',
+      'assam',
+      'bihar',
+      'chhattisgarh',
+      'goa',
+      'gujarat',
+      'haryana',
+      'himachal pradesh',
+      'jharkhand',
+      'karnataka',
+      'kerala',
+      'madhya pradesh',
+      'maharashtra',
+      'manipur',
+      'meghalaya',
+      'mizoram',
+      'nagaland',
+      'odisha',
+      'punjab',
+      'rajasthan',
+      'sikkim',
+      'tamil nadu',
+      'telangana',
+      'tripura',
+      'uttar pradesh',
+      'uttarakhand',
+      'west bengal',
+      'delhi',
+      'puducherry',
+      'jammu and kashmir',
+      'ladakh',
+    ];
+
+    // If it's a state, search by state
+    if (indianStates.contains(queryLower)) {
+      return {
+        'searchType': 'byState',
+        'country': 'India',
+        'state': _capitalizeWords(queryLower),
+        'city': 'Any',
+      };
+    }
+
+    // City to State mapping
+    final cityToState = {
+      'mumbai': 'Maharashtra',
+      'pune': 'Maharashtra',
+      'nagpur': 'Maharashtra',
+      'nashik': 'Maharashtra',
+      'aurangabad': 'Maharashtra',
+      'delhi': 'Delhi',
+      'new delhi': 'Delhi',
+      'bangalore': 'Karnataka',
+      'bengaluru': 'Karnataka',
+      'mysore': 'Karnataka',
+      'mangalore': 'Karnataka',
+      'kolkata': 'West Bengal',
+      'darjeeling': 'West Bengal',
+      'chennai': 'Tamil Nadu',
+      'madurai': 'Tamil Nadu',
+      'coimbatore': 'Tamil Nadu',
+      'hyderabad': 'Telangana',
+      'ahmedabad': 'Gujarat',
+      'surat': 'Gujarat',
+      'vadodara': 'Gujarat',
+      'jaipur': 'Rajasthan',
+      'udaipur': 'Rajasthan',
+      'jodhpur': 'Rajasthan',
+      'ajmer': 'Rajasthan',
+      'lucknow': 'Uttar Pradesh',
+      'agra': 'Uttar Pradesh',
+      'varanasi': 'Uttar Pradesh',
+      'kanpur': 'Uttar Pradesh',
+      'kochi': 'Kerala',
+      'thiruvananthapuram': 'Kerala',
+      'kozhikode': 'Kerala',
+      'chandigarh': 'Chandigarh',
+      'goa': 'Goa',
+      'panaji': 'Goa',
+      'shimla': 'Himachal Pradesh',
+      'manali': 'Himachal Pradesh',
+      'patna': 'Bihar',
+      'bhopal': 'Madhya Pradesh',
+      'indore': 'Madhya Pradesh',
+      'ranchi': 'Jharkhand',
+      'jamshedpur': 'Jharkhand',
+      'guwahati': 'Assam',
+      'bhubaneswar': 'Odisha',
+      'puri': 'Odisha',
+      'amritsar': 'Punjab',
+      'ludhiana': 'Punjab',
+      'srinagar': 'Jammu And Kashmir',
+      'jammu': 'Jammu And Kashmir',
+      'dehradun': 'Uttarakhand',
+      'haridwar': 'Uttarakhand',
+      'rishikesh': 'Uttarakhand',
+      'nainital': 'Uttarakhand',
+      'mussoorie': 'Uttarakhand',
+    };
+
+    // Get the state for the city, or use a default
+    final state = cityToState[queryLower] ?? 'Maharashtra';
+
+    return {
+      'searchType': 'byCity',
+      'country': 'India',
+      'state': state,
+      'city': _capitalizeWords(queryLower),
+    };
+  }
+
+  String _capitalizeWords(String text) {
+    return text
+        .split(' ')
+        .map(
+          (word) =>
+              word.isEmpty ? '' : word[0].toUpperCase() + word.substring(1),
+        )
+        .join(' ');
   }
 }

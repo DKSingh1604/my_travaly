@@ -5,8 +5,17 @@ import '../widgets/hotel_card.dart';
 
 class SearchResultsScreen extends StatefulWidget {
   final String query;
+  final String? searchType;
+  final String? state;
+  final String? city;
 
-  const SearchResultsScreen({super.key, required this.query});
+  const SearchResultsScreen({
+    super.key,
+    required this.query,
+    this.searchType,
+    this.state,
+    this.city,
+  });
 
   @override
   State<SearchResultsScreen> createState() => _SearchResultsScreenState();
@@ -21,7 +30,12 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
     // Perform initial search
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final hotelProvider = Provider.of<HotelProvider>(context, listen: false);
-      hotelProvider.searchHotels(widget.query);
+      hotelProvider.searchHotels(
+        widget.query,
+        searchType: widget.searchType,
+        state: widget.state,
+        city: widget.city,
+      );
     });
 
     // Setup pagination listener
@@ -52,13 +66,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Search Results'),
-            Text(
-              'Query: "${widget.query}"',
-              style: const TextStyle(fontSize: 12),
-            ),
-          ],
+          children: [Text('Search Results for "${widget.query}"')],
         ),
       ),
       body: Column(
@@ -69,7 +77,6 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: Colors.blue.shade50,
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

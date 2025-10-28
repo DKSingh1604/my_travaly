@@ -36,7 +36,13 @@ class HotelProvider extends ChangeNotifier {
     }
   }
 
-  Future<void> searchHotels(String query, {bool resetPage = true}) async {
+  Future<void> searchHotels(
+    String query, {
+    String? searchType,
+    String? state,
+    String? city,
+    bool resetPage = true,
+  }) async {
     if (query.trim().isEmpty) {
       _searchResults = [];
       _currentPage = 1;
@@ -59,6 +65,9 @@ class HotelProvider extends ChangeNotifier {
     try {
       final result = await _apiService.searchHotels(
         query: query,
+        searchType: searchType,
+        state: state,
+        city: city,
         page: _currentPage,
         perPage: 10,
       );
