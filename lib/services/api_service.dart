@@ -540,4 +540,46 @@ class ApiService {
         )
         .join(' ');
   }
+
+  // Fetch App Settings
+  Future<Map<String, dynamic>> getAppSettings() async {
+    try {
+      final uri = Uri.parse(baseUrl);
+
+      print('🔧 Fetching App Settings...');
+
+      final response = await http.post(
+        uri,
+        headers: {
+          'authToken': authToken,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: json.encode({"action": "setting"}),
+      );
+
+      print('📡 App Settings Status: ${response.statusCode}');
+      print('📄 App Settings Response: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        if (data['status'] == true && data['data'] != null) {
+          print('✅ App Settings fetched successfully');
+          return data['data'] as Map<String, dynamic>;
+        } else {
+          throw Exception(data['message'] ?? 'Failed to fetch app settings');
+        }
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(
+          errorData['message'] ??
+              'Failed to fetch app settings: ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('💥 App Settings Error: $e');
+      throw Exception('Error fetching app settings: $e');
+    }
+  }
 }

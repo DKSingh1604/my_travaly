@@ -4,9 +4,9 @@ import 'package:my_travaly/firebase_options.dart';
 import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/hotel_provider.dart';
+import 'providers/app_settings_provider.dart';
 import 'services/api_service.dart';
-import 'screens/login_screen.dart';
-import 'screens/home_screen.dart';
+import 'widgets/app_initializer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -39,6 +39,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => HotelProvider()),
+        ChangeNotifierProvider(create: (_) => AppSettingsProvider()),
       ],
       child: MaterialApp(
         title: 'MyTravaly',
@@ -48,14 +49,7 @@ class MyApp extends StatelessWidget {
           useMaterial3: true,
           appBarTheme: const AppBarTheme(centerTitle: false, elevation: 2),
         ),
-        home: Consumer<AuthProvider>(
-          builder: (context, authProvider, _) {
-            if (authProvider.isAuthenticated) {
-              return const HomeScreen();
-            }
-            return const LoginScreen();
-          },
-        ),
+        home: const AppInitializer(),
       ),
     );
   }

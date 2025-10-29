@@ -56,8 +56,8 @@ class HotelCard extends StatelessWidget {
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                                 colors: [
-                                  Colors.blue.shade100,
-                                  Colors.blue.shade50,
+                                  const Color(0xFFFFE8DD),
+                                  const Color(0xFFFFF5F0),
                                 ],
                               ),
                             ),
@@ -65,7 +65,7 @@ class HotelCard extends StatelessWidget {
                               child: Icon(
                                 Icons.hotel_rounded,
                                 size: 70,
-                                color: Colors.blue.shade300,
+                                color: const Color(0xFFE86A4D).withOpacity(0.5),
                               ),
                             ),
                           ),
@@ -77,8 +77,8 @@ class HotelCard extends StatelessWidget {
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
                               colors: [
-                                Colors.blue.shade100,
-                                Colors.blue.shade50,
+                                const Color(0xFFFFE8DD),
+                                const Color(0xFFFFF5F0),
                               ],
                             ),
                           ),
@@ -86,7 +86,7 @@ class HotelCard extends StatelessWidget {
                             child: Icon(
                               Icons.hotel_rounded,
                               size: 70,
-                              color: Colors.blue.shade300,
+                              color: const Color(0xFFE86A4D).withOpacity(0.5),
                             ),
                           ),
                         ),
@@ -233,7 +233,7 @@ class HotelCard extends StatelessWidget {
                                   style: const TextStyle(
                                     fontSize: 24,
                                     fontWeight: FontWeight.bold,
-                                    color: Colors.blue,
+                                    color: Color(0xFFE86A4D),
                                     letterSpacing: -0.5,
                                   ),
                                 ),
@@ -256,7 +256,7 @@ class HotelCard extends StatelessWidget {
                         ElevatedButton(
                           onPressed: () => _showHotelDetails(context),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
+                            backgroundColor: const Color(0xFFE86A4D),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 24,
@@ -391,7 +391,7 @@ class HotelCard extends StatelessWidget {
                 // Location
                 Row(
                   children: [
-                    const Icon(Icons.location_on, color: Colors.blue),
+                    const Icon(Icons.location_on, color: Color(0xFFE86A4D)),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -437,7 +437,7 @@ class HotelCard extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 28,
                               fontWeight: FontWeight.bold,
-                              color: Colors.blue,
+                              color: Color(0xFFE86A4D),
                             ),
                           ),
                         ],
@@ -446,8 +446,8 @@ class HotelCard extends StatelessWidget {
                         onPressed: () {
                           Navigator.pop(context);
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              backgroundColor: Colors.blue,
+                            const SnackBar(
+                              backgroundColor: Color(0xFFE86A4D),
                               content: Text('Feature Coming soon...'),
                             ),
                           );

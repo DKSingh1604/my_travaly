@@ -9,6 +9,7 @@ import '../services/api_service.dart';
 import '../widgets/hotel_card.dart';
 import 'search_results_screen.dart';
 import 'login_screen.dart';
+import 'app_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -183,6 +184,18 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AppSettingsScreen(),
+                ),
+              );
+            },
+            tooltip: 'Settings',
+          ),
+          IconButton(
             icon: const Icon(Icons.logout),
             onPressed: _handleSignOut,
             tooltip: 'Sign Out',
@@ -201,7 +214,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [Colors.blue.shade400, Colors.blue.shade600],
+                  colors: [const Color(0xFFE86A4D), const Color(0xFFD85840)],
                 ),
                 borderRadius: BorderRadius.circular(20),
               ),
@@ -483,7 +496,11 @@ class _QuickChip extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Icon(Icons.place_rounded, size: 16, color: Colors.blue),
+              const Icon(
+                Icons.place_rounded,
+                size: 16,
+                color: Color(0xFFE86A4D),
+              ),
               const SizedBox(width: 6),
               Text(label, style: const TextStyle(fontWeight: FontWeight.w600)),
             ],
