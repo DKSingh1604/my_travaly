@@ -19,14 +19,12 @@ void main() async {
     print('Firebase initialization error: $e');
   }
 
-  // Register device and get visitor token
   try {
     final apiService = ApiService();
     await apiService.registerDevice();
     print('✅ Device registration completed');
   } catch (e) {
     print('⚠️ Device registration failed: $e');
-    // Continue anyway - the app will try to register again when making API calls
   }
 
   runApp(const MyApp());
@@ -52,7 +50,6 @@ class MyApp extends StatelessWidget {
         ),
         home: Consumer<AuthProvider>(
           builder: (context, authProvider, _) {
-            // Check if user is already signed in
             if (authProvider.isAuthenticated) {
               return const HomeScreen();
             }

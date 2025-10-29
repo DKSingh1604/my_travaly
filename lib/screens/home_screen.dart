@@ -48,10 +48,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _onSearchChanged() {
-    // Cancel previous debounce timer
     if (_debounce?.isActive ?? false) _debounce!.cancel();
 
-    // Set a new timer
     _debounce = Timer(const Duration(milliseconds: 500), () {
       _fetchAutocompleteSuggestions();
     });
@@ -194,230 +192,231 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           // Header + Search with Autocomplete
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.blue.shade400, Colors.blue.shade600],
-              ),
-              borderRadius: const BorderRadius.only(
-                bottomLeft: Radius.circular(20),
-                bottomRight: Radius.circular(20),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                const Text(
-                  'Find your next stay',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Colors.blue.shade400, Colors.blue.shade600],
                 ),
-                const SizedBox(height: 8),
-                // Search field with shadow
-                Material(
-                  color: Colors.transparent,
-                  elevation: 0,
-                  child: Container(
-                    decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Find your next stay',
+                    style: TextStyle(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(14),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 10,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: TextField(
-                      controller: _searchController,
-                      focusNode: _searchFocusNode,
-                      textInputAction: TextInputAction.search,
-                      decoration: InputDecoration(
-                        hintText: 'Search by city, state or hotel…',
-                        hintStyle: TextStyle(color: Colors.grey.shade500),
-                        prefixIcon: const Icon(Icons.search),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear),
-                                onPressed: () {
-                                  setState(() {
-                                    _searchController.clear();
-                                    _suggestions = [];
-                                    _showSuggestions = false;
-                                  });
-                                },
-                              )
-                            : null,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(14),
-                          borderSide: BorderSide.none,
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                          vertical: 14,
-                        ),
-                      ),
-                      onSubmitted: (query) {
-                        if (query.isNotEmpty) {
-                          _searchFocusNode.unfocus();
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  SearchResultsScreen(query: query),
-                            ),
-                          );
-                        }
-                      },
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
                     ),
                   ),
-                ),
-
-                // Suggestions List
-                if (_showSuggestions)
-                  Container(
-                    margin: const EdgeInsets.only(top: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.1),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    constraints: const BoxConstraints(maxHeight: 300),
-                    child: _isLoadingSuggestions
-                        ? const Center(
-                            child: Padding(
-                              padding: EdgeInsets.all(20.0),
-                              child: CircularProgressIndicator(),
-                            ),
-                          )
-                        : ListView.builder(
-                            shrinkWrap: true,
-                            itemCount: _suggestions.length,
-                            itemBuilder: (context, index) {
-                              final suggestion = _suggestions[index];
-                              final icon = _getIconForType(
-                                suggestion['type'] ?? 'city',
-                              );
-
-                              return ListTile(
-                                leading: Text(
-                                  icon,
-                                  style: const TextStyle(fontSize: 24),
-                                ),
-                                title: Text(
-                                  suggestion['name']!,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  '${suggestion['type']}${suggestion['state']?.isNotEmpty == true ? ' • ${suggestion['state']}' : ''}',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                trailing: const Icon(
-                                  Icons.chevron_right,
-                                  color: Colors.black54,
-                                ),
-                                onTap: () {
-                                  setState(() {
-                                    _searchController.text =
-                                        suggestion['name']!;
-                                    _showSuggestions = false;
-                                  });
-                                  _searchFocusNode.unfocus();
-
-                                  String searchType;
-                                  String city = 'Any';
-                                  String state = suggestion['state'] ?? 'Any';
-
-                                  switch (suggestion['type']?.toLowerCase()) {
-                                    case 'city':
-                                      searchType = 'byCity';
-                                      city = suggestion['name']!;
-                                      break;
-                                    case 'state':
-                                      searchType = 'byState';
-                                      state = suggestion['name']!;
-                                      break;
-                                    case 'country':
-                                      searchType = 'byCountry';
-                                      break;
-                                    case 'property':
-                                      searchType = 'byCity';
-                                      city = suggestion['name']!;
-                                      break;
-                                    default:
-                                      searchType = 'byCity';
-                                      city = suggestion['name']!;
-                                  }
-
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SearchResultsScreen(
-                                        query: suggestion['name']!,
-                                        searchType: searchType,
-                                        state: state,
-                                        city: city,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              );
-                            },
+                  const SizedBox(height: 8),
+                  // Search field with shadow
+                  Material(
+                    color: Colors.transparent,
+                    elevation: 0,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        focusNode: _searchFocusNode,
+                        textInputAction: TextInputAction.search,
+                        decoration: InputDecoration(
+                          hintText: 'Search by city, state or hotel…',
+                          hintStyle: TextStyle(color: Colors.grey.shade500),
+                          prefixIcon: const Icon(Icons.search),
+                          suffixIcon: _searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear),
+                                  onPressed: () {
+                                    setState(() {
+                                      _searchController.clear();
+                                      _suggestions = [];
+                                      _showSuggestions = false;
+                                    });
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                          ),
+                        ),
+                        onSubmitted: (query) {
+                          if (query.isNotEmpty) {
+                            _searchFocusNode.unfocus();
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    SearchResultsScreen(query: query),
+                              ),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                   ),
-                const SizedBox(height: 12),
-                // Quick filters
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      _QuickChip(
-                        label: 'Mumbai',
-                        onTap: () => _goQuick('Mumbai'),
+
+                  // Suggestions List
+                  if (_showSuggestions)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      _QuickChip(
-                        label: 'Delhi',
-                        onTap: () => _goQuick('Delhi'),
-                      ),
-                      _QuickChip(label: 'Goa', onTap: () => _goQuick('Goa')),
-                      _QuickChip(
-                        label: 'Nainital',
-                        onTap: () => _goQuick('Nainital'),
-                      ),
-                      _QuickChip(
-                        label: 'Jaipur',
-                        onTap: () => _goQuick('Jaipur'),
-                      ),
-                      _QuickChip(
-                        label: 'Shimla',
-                        onTap: () => _goQuick('Shimla'),
-                      ),
-                    ],
+                      constraints: const BoxConstraints(maxHeight: 300),
+                      child: _isLoadingSuggestions
+                          ? const Center(
+                              child: Padding(
+                                padding: EdgeInsets.all(20.0),
+                                child: CircularProgressIndicator(),
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: _suggestions.length,
+                              itemBuilder: (context, index) {
+                                final suggestion = _suggestions[index];
+                                final icon = _getIconForType(
+                                  suggestion['type'] ?? 'city',
+                                );
+
+                                return ListTile(
+                                  leading: Text(
+                                    icon,
+                                    style: const TextStyle(fontSize: 24),
+                                  ),
+                                  title: Text(
+                                    suggestion['name']!,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  subtitle: Text(
+                                    '${suggestion['type']}${suggestion['state']?.isNotEmpty == true ? ' • ${suggestion['state']}' : ''}',
+                                    style: TextStyle(
+                                      color: Colors.grey[600],
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                  trailing: const Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.black54,
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      _searchController.text =
+                                          suggestion['name']!;
+                                      _showSuggestions = false;
+                                    });
+                                    _searchFocusNode.unfocus();
+
+                                    String searchType;
+                                    String city = 'Any';
+                                    String state = suggestion['state'] ?? 'Any';
+
+                                    switch (suggestion['type']?.toLowerCase()) {
+                                      case 'city':
+                                        searchType = 'byCity';
+                                        city = suggestion['name']!;
+                                        break;
+                                      case 'state':
+                                        searchType = 'byState';
+                                        state = suggestion['name']!;
+                                        break;
+                                      case 'country':
+                                        searchType = 'byCountry';
+                                        break;
+                                      case 'property':
+                                        searchType = 'byCity';
+                                        city = suggestion['name']!;
+                                        break;
+                                      default:
+                                        searchType = 'byCity';
+                                        city = suggestion['name']!;
+                                    }
+
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) =>
+                                            SearchResultsScreen(
+                                              query: suggestion['name']!,
+                                              searchType: searchType,
+                                              state: state,
+                                              city: city,
+                                            ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                  const SizedBox(height: 12),
+                  // Quick filters
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _QuickChip(
+                          label: 'Mumbai',
+                          onTap: () => _goQuick('Mumbai'),
+                        ),
+                        _QuickChip(
+                          label: 'Delhi',
+                          onTap: () => _goQuick('Delhi'),
+                        ),
+                        _QuickChip(label: 'Goa', onTap: () => _goQuick('Goa')),
+                        _QuickChip(
+                          label: 'Nainital',
+                          onTap: () => _goQuick('Nainital'),
+                        ),
+                        _QuickChip(
+                          label: 'Jaipur',
+                          onTap: () => _goQuick('Jaipur'),
+                        ),
+                        _QuickChip(
+                          label: 'Shimla',
+                          onTap: () => _goQuick('Shimla'),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
 
