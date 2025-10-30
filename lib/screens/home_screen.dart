@@ -144,7 +144,14 @@ class _HomeScreenState extends State<HomeScreen> {
       MaterialPageRoute(
         builder: (context) => SearchResultsScreen(query: query),
       ),
-    );
+    ).then((_) {
+      // Clear search bar when returning from search results
+      setState(() {
+        _searchController.clear();
+        _suggestions = [];
+        _showSuggestions = false;
+      });
+    });
   }
 
   @override
@@ -207,7 +214,6 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: Column(
         children: [
-          // Header + Search with Autocomplete
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Container(
@@ -235,7 +241,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  // Search field with shadow
                   Material(
                     color: Colors.transparent,
                     elevation: 0,
@@ -290,7 +295,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                 builder: (context) =>
                                     SearchResultsScreen(query: query),
                               ),
-                            );
+                            ).then((_) {
+                              // Clear search bar when returning from search results
+                              setState(() {
+                                _searchController.clear();
+                                _suggestions = [];
+                                _showSuggestions = false;
+                              });
+                            });
                           }
                         },
                       ),
@@ -395,7 +407,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                               city: city,
                                             ),
                                       ),
-                                    );
+                                    ).then((_) {
+                                      // Clear search bar when returning from search results
+                                      setState(() {
+                                        _searchController.clear();
+                                        _suggestions = [];
+                                        _showSuggestions = false;
+                                      });
+                                    });
                                   },
                                 );
                               },
@@ -433,6 +452,68 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ],
               ),
+            ),
+          ),
+
+          // Popular Stays Section Header
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 7,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0xFFE86A4D), Color(0xFFD85840)],
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFE86A4D).withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: const [
+                      Icon(
+                        Icons.local_fire_department_rounded,
+                        size: 18,
+                        color: Colors.white,
+                      ),
+                      SizedBox(width: 6),
+                      Text(
+                        'Popular Stays',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Container(
+                    height: 1,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.centerLeft,
+                        end: Alignment.centerRight,
+                        colors: [Colors.grey.shade300, Colors.grey.shade500],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 
