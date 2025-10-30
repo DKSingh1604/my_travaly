@@ -158,7 +158,10 @@ class _HomeScreenState extends State<HomeScreen> {
         elevation: 0,
         title: const Text(
           'MyTravaly',
-          style: TextStyle(fontWeight: FontWeight.w700),
+          style: TextStyle(
+            fontWeight: FontWeight.w700,
+            color: Color(0xFFE86A4D),
+          ),
         ),
         actions: [
           if (authProvider.user != null)

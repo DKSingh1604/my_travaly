@@ -54,7 +54,6 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 60),
 
-                // Logo - MT in rounded square
                 Container(
                   width: 120,
                   height: 120,
