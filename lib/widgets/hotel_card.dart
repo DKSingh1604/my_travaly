@@ -530,7 +530,9 @@ class HotelCard extends StatelessWidget {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
                               backgroundColor: Color(0xFFE86A4D),
-                              content: Text('Feature Coming soon...'),
+                              content: Text(
+                                'Booking functionality will be available soon',
+                              ),
                             ),
                           );
                         },

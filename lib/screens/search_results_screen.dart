@@ -184,16 +184,14 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                           textAlign: TextAlign.center,
                           style: const TextStyle(fontSize: 16),
                         ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Showing filtered sample data instead',
-                          style: TextStyle(fontSize: 14, color: Colors.grey),
-                        ),
                         const SizedBox(height: 16),
                         ElevatedButton(
                           onPressed: () {
                             hotelProvider.searchHotels(widget.query);
                           },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFE86A4D),
+                          ),
                           child: const Text('Retry'),
                         ),
                       ],

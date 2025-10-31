@@ -541,7 +541,7 @@ class ApiService {
     try {
       final uri = Uri.parse(baseUrl);
 
-      print('🔧 Fetching App Settings...');
+      print('Fetching App Settings...');
 
       final response = await http.post(
         uri,
