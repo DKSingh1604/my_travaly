@@ -32,7 +32,7 @@ class ApiService {
     try {
       final existingToken = await getVisitorToken();
       if (existingToken != null && existingToken.isNotEmpty) {
-        print('✅ Using existing visitor token: $existingToken');
+        print('Using existing visitor token: $existingToken');
         return existingToken;
       }
 
@@ -53,7 +53,7 @@ class ApiService {
           deviceSerial = serial;
         }
 
-        print('🔢 Using device serial: $deviceSerial');
+        print('Using device serial: $deviceSerial');
 
         deviceData = {
           "deviceModel": androidInfo.model,
@@ -99,15 +99,13 @@ class ApiService {
 
       final uri = Uri.parse(baseUrl);
 
-      print('🔐 Registering device...');
-      print('📋 Device Serial being sent: ${deviceData["deviceSerial"]}');
+      print('Registering device...');
+      print('Device Serial being sent: ${deviceData["deviceSerial"]}');
 
       final requestBody = {
         "action": "deviceRegister",
         "deviceRegister": deviceData,
       };
-
-      print('📤 Request Body: ${json.encode(requestBody)}');
 
       final response = await http.post(
         uri,
@@ -119,8 +117,7 @@ class ApiService {
         body: json.encode(requestBody),
       );
 
-      print('📡 Registration Status Code: ${response.statusCode}');
-      print('📄 Registration Response: ${response.body}');
+      print('Registration Status Code: ${response.statusCode}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = json.decode(response.body);
@@ -131,7 +128,7 @@ class ApiService {
           if (visitorToken != null && visitorToken.isNotEmpty) {
             await _saveVisitorToken(visitorToken);
             print(
-              '✅ Device registered successfully. Visitor token: $visitorToken',
+              'Device registered successfully. Visitor token: $visitorToken',
             );
             return visitorToken;
           }
@@ -146,7 +143,7 @@ class ApiService {
         );
       }
     } catch (e) {
-      print('💥 Registration Error: $e');
+      print('Registration Error: $e');
       throw Exception('Error registering device: $e');
     }
   }
@@ -158,7 +155,7 @@ class ApiService {
       final result = await searchHotels(query: 'hotel', page: 1, perPage: 10);
       return result['hotels'] as List<Hotel>;
     } catch (e) {
-      print('💥 Error loading hotels: $e');
+      print('Error loading hotels: $e');
       return [];
     }
   }
@@ -170,7 +167,7 @@ class ApiService {
 
       final visitorToken = await getVisitorToken();
       if (visitorToken == null || visitorToken.isEmpty) {
-        print('⚠️ No visitor token found, registering device...');
+        print('No visitor token found, registering device...');
         await registerDevice();
       }
 
@@ -195,7 +192,7 @@ class ApiService {
         },
       };
 
-      print('🔍 Autocomplete Request: ${json.encode(requestBody)}');
+      print('Autocomplete Request: ${json.encode(requestBody)}');
 
       final response = await http.post(
         uri,
@@ -203,8 +200,8 @@ class ApiService {
         body: json.encode(requestBody),
       );
 
-      print('📡 Autocomplete Status: ${response.statusCode}');
-      print('📄 Autocomplete Response: ${response.body}');
+      print('Autocomplete Status: ${response.statusCode}');
+      print('Autocomplete Response: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -278,16 +275,16 @@ class ApiService {
             }
           }
 
-          print('✅ Got ${suggestions.length} autocomplete suggestions');
+          print('Got ${suggestions.length} autocomplete suggestions');
         }
 
         return suggestions;
       } else {
-        print('⚠️ Autocomplete API failed, using empty list');
+        print('Autocomplete API failed, using empty list');
         return [];
       }
     } catch (e) {
-      print('💥 Autocomplete Error: $e');
+      print('Autocomplete Error: $e');
       return [];
     }
   }
@@ -303,15 +300,15 @@ class ApiService {
     try {
       final visitorToken = await getVisitorToken();
       if (visitorToken == null || visitorToken.isEmpty) {
-        print('⚠️ No visitor token found, registering device...');
+        print('No visitor token found, registering device...');
         await registerDevice();
       }
 
       final uri = Uri.parse(baseUrl);
 
-      print('🔍 API Request: $uri');
-      print('🔑 Auth Token: $authToken');
-      print('🎫 Visitor Token: ${_visitorToken ?? "None"}');
+      print('API Request: $uri');
+      print('Auth Token: $authToken');
+      print('Visitor Token: ${_visitorToken ?? "None"}');
 
       final headers = {
         'authToken': authToken,
@@ -351,17 +348,15 @@ class ApiService {
         },
       };
 
-      print('📤 Request Body: ${json.encode(requestBody)}');
-
       final response = await http.post(
         uri,
         headers: headers,
         body: json.encode(requestBody),
       );
 
-      print('📡 Status Code: ${response.statusCode}');
+      print('Status Code: ${response.statusCode}');
       print(
-        '📄 Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}...',
+        'Response Body: ${response.body.substring(0, response.body.length > 500 ? 500 : response.body.length)}...',
       );
 
       if (response.statusCode == 200) {
@@ -383,7 +378,7 @@ class ApiService {
           total = hotels.length;
           totalPages = (total / perPage).ceil();
 
-          print('✅ Parsed ${hotels.length} hotels successfully');
+          print('Parsed ${hotels.length} hotels successfully');
         }
 
         return {
@@ -401,7 +396,7 @@ class ApiService {
         );
       }
     } catch (e) {
-      print('💥 API Error: $e');
+      print('API Error: $e');
       throw Exception('Error searching hotels: $e');
     }
   }
@@ -558,14 +553,14 @@ class ApiService {
         body: json.encode({"action": "setting"}),
       );
 
-      print('📡 App Settings Status: ${response.statusCode}');
-      print('📄 App Settings Response: ${response.body}');
+      print('App Settings Status: ${response.statusCode}');
+      print('App Settings Response: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
 
         if (data['status'] == true && data['data'] != null) {
-          print('✅ App Settings fetched successfully');
+          print('App Settings fetched successfully');
           return data['data'] as Map<String, dynamic>;
         } else {
           throw Exception(data['message'] ?? 'Failed to fetch app settings');
@@ -578,7 +573,7 @@ class ApiService {
         );
       }
     } catch (e) {
-      print('💥 App Settings Error: $e');
+      print('App Settings Error: $e');
       throw Exception('Error fetching app settings: $e');
     }
   }

@@ -22,9 +22,9 @@ void main() async {
   try {
     final apiService = ApiService();
     await apiService.registerDevice();
-    print('✅ Device registration completed');
+    print('Device registration completed');
   } catch (e) {
-    print('⚠️ Device registration failed: $e');
+    print('Device registration failed: $e');
   }
 
   runApp(const MyApp());
