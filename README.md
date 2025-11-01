@@ -236,10 +236,3 @@ Uses `cached_network_image` package for:
    - Optimize images
    - Add offline support
 
-## License
-
-This project is created for demonstration purposes.
-
----
-
-**Built with ❤️ using Flutter**
