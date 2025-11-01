@@ -308,7 +308,7 @@ class ApiService {
 
       print('API Request: $uri');
       print('Auth Token: $authToken');
-      print('Visitor Token: ${_visitorToken ?? "None"}');
+      // print('Visitor Token: ${_visitorToken ?? "None"}');
 
       final headers = {
         'authToken': authToken,
